@@ -11,10 +11,33 @@ import time
 from pathlib import Path
 
 import streamlit as st
+from dotenv import load_dotenv
+
+st.set_page_config(
+    page_title="Documentation Assistant",
+    page_icon="📚",
+    layout="wide",
+    initial_sidebar_state="collapsed",  # leaves room for the motion-graphics stage
+)
 
 # core.py lives in the project root.
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+
+# API keys: Streamlit Cloud secrets when deployed, .env locally.
+REQUIRED_KEYS = ("OPENAI_API_KEY", "PINECONE_API_KEY", "TAVILY_API_KEY", "INDEX_NAME")
+try:
+    for key in REQUIRED_KEYS:
+        if not os.environ.get(key) and key in st.secrets:
+            os.environ[key] = str(st.secrets[key])
+except Exception:  # no secrets.toml (local run)
+    pass
+load_dotenv(ROOT / ".env")
+missing = [k for k in REQUIRED_KEYS if not os.environ.get(k)]
+if missing:
+    st.error(f"Missing configuration: {', '.join(missing)}. Add them to `.env` locally, "
+             "or to the app's Secrets on Streamlit Cloud, then reboot.")
+    st.stop()
 
 from core import stream_llm  # noqa: E402
 from ingestion import ingest_site  # noqa: E402
@@ -32,13 +55,6 @@ from components import (  # noqa: E402
 # Limits for user-added sites (the public demo runs on the owner's API keys).
 CRAWL = dict(max_depth=2, limit=25, extract_depth="basic")
 CRAWLS_PER_SESSION = 3
-
-st.set_page_config(
-    page_title="Documentation Assistant",
-    page_icon="📚",
-    layout="wide",
-    initial_sidebar_state="collapsed",  # leaves room for the motion-graphics stage
-)
 
 
 @st.cache_data(ttl=60, show_spinner=False)

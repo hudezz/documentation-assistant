@@ -1,4 +1,4 @@
-"""RAG agent over the LangChain docs stored in Pinecone.
+"""RAG agent over documentation stored in Pinecone (one namespace per site).
 
 `run_llm` returns a finished answer; `stream_llm` yields progress events for
 the UI. Both use the same agent: one retrieval tool + a citing system prompt.
@@ -20,27 +20,31 @@ load_dotenv()
 # Must match the model used in ingestion.py, or query vectors won't line up.
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
-vectorstore = PineconeVectorStore(
-    index_name=os.environ["INDEX_NAME"], embedding=embeddings
-)
 model = init_chat_model("gpt-5.2", model_provider="openai")
 
 
-@tool(response_format="content_and_artifact")
-def retrieve_context(query: str):
-    """Retrieve relevant documentation to help answer user queries about LangChain."""
-    retrieved_docs = vectorstore.as_retriever().invoke(query, k=4)
-
-    serialized = "\n\n".join(
-        (f"Source: {doc.metadata.get('source', 'Unknown')}\n\nContent: {doc.page_content}")
-        for doc in retrieved_docs
+def make_retriever_tool(namespace: str = ""):
+    """retrieve_context tool bound to one site's namespace ("" = built-in LangChain docs)."""
+    vectorstore = PineconeVectorStore(
+        index_name=os.environ["INDEX_NAME"], embedding=embeddings, namespace=namespace or None
     )
-    # content goes to the model; the artifact (raw Documents) is kept for citations
-    return serialized, retrieved_docs
+
+    @tool(response_format="content_and_artifact")
+    def retrieve_context(query: str):
+        """Retrieve relevant documentation to help answer the user's question."""
+        retrieved_docs = vectorstore.as_retriever(search_kwargs={"k": 4}).invoke(query)
+        serialized = "\n\n".join(
+            f"Source: {doc.metadata.get('source', 'Unknown')}\n\nContent: {doc.page_content}"
+            for doc in retrieved_docs
+        )
+        # content goes to the model; the artifact (raw Documents) is kept for citations
+        return serialized, retrieved_docs
+
+    return retrieve_context
 
 
 SYSTEM_PROMPT = (
-    "You are a helpful AI assistant that answers questions about LangChain documentation. "
+    "You are a helpful AI assistant that answers questions about a software project's documentation. "
     "You have access to a tool that retrieves relevant documentation. "
     "Use the tool to find relevant information before answering questions. "
     "Always cite the sources you use in your answers. "
@@ -48,7 +52,8 @@ SYSTEM_PROMPT = (
 )
 
 
-def stream_llm(query: str, history: List[Dict[str, str]] | None = None) -> Iterator[Dict[str, Any]]:
+def stream_llm(query: str, history: List[Dict[str, str]] | None = None,
+               namespace: str = "") -> Iterator[Dict[str, Any]]:
     """Run the agent and yield a progress event after each step.
 
     Events:
@@ -57,9 +62,10 @@ def stream_llm(query: str, history: List[Dict[str, str]] | None = None) -> Itera
         {"type": "results", "docs": list[Document]}
         {"type": "answer",  "text": str}
 
-    `history` is prior turns as [{"role": ..., "content": ...}] for follow-ups.
+    `history` is prior turns as [{"role": ..., "content": ...}] for follow-ups;
+    `namespace` picks which indexed site to search.
     """
-    agent = create_agent(model, tools=[retrieve_context], system_prompt=SYSTEM_PROMPT)
+    agent = create_agent(model, tools=[make_retriever_tool(namespace)], system_prompt=SYSTEM_PROMPT)
     messages = list(history or []) + [{"role": "user", "content": query}]
 
     yield {"type": "thinking"}
@@ -80,9 +86,9 @@ def stream_llm(query: str, history: List[Dict[str, str]] | None = None) -> Itera
                     yield {"type": "answer", "text": message.content}
 
 
-def run_llm(query: str) -> Dict[str, Any]:
+def run_llm(query: str, namespace: str = "") -> Dict[str, Any]:
     """Answer `query`. Returns {"answer": str, "context": list[Document]}."""
-    agent = create_agent(model, tools=[retrieve_context], system_prompt=SYSTEM_PROMPT)
+    agent = create_agent(model, tools=[make_retriever_tool(namespace)], system_prompt=SYSTEM_PROMPT)
     messages = [{"role": "user", "content": query}]
     response = agent.invoke({"messages": messages})
     answer = response["messages"][-1].content

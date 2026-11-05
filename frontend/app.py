@@ -2,7 +2,7 @@
 
     uv run streamlit run frontend/app.py
 
-UI only; all agent logic lives in core.py.
+UI only; agent logic is in core.py, crawling in ingestion.py.
 """
 
 import os
@@ -17,92 +17,171 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from core import stream_llm  # noqa: E402
+from ingestion import ingest_site  # noqa: E402
+from sources import MAX_SOURCES, label, list_sources, namespace_for, validate_url  # noqa: E402
 
 from components import (  # noqa: E402
     agent_pipeline,
+    background_ingest,
     background_step,
     live_agent_demo,
     load_demo_runs,
     page_background,
 )
 
+# Limits for user-added sites (the public demo runs on the owner's API keys).
+CRAWL = dict(max_depth=2, limit=25, extract_depth="basic")
+CRAWLS_PER_SESSION = 3
+
 st.set_page_config(
-    page_title="LangChain Docs Assistant",
+    page_title="Documentation Assistant",
     page_icon="📚",
     layout="wide",
     initial_sidebar_state="collapsed",  # leaves room for the motion-graphics stage
 )
 
 
-# --- Sidebar ------------------------------------------------------------------
-@st.cache_data(ttl=300, show_spinner=False)
-def index_size() -> int | None:
-    """Vector count in the Pinecone index, or None if unreachable."""
+@st.cache_data(ttl=60, show_spinner=False)
+def get_sources() -> dict:
+    """{namespace: chunk count}; empty if Pinecone is unreachable."""
     try:
-        from pinecone import Pinecone
-
-        index = Pinecone(api_key=os.environ["PINECONE_API_KEY"]).Index(os.environ["INDEX_NAME"])
-        return index.describe_index_stats()["total_vector_count"]
+        return list_sources()
     except Exception:
-        return None
+        return {"": 0}
 
 
+sources = get_sources()
+if "pending_source" in st.session_state:          # set after indexing a new site
+    st.session_state.source = st.session_state.pop("pending_source")
+if st.session_state.get("source") not in sources:
+    st.session_state.source = ""
+ns = st.session_state.source
+chats = st.session_state.setdefault("chats", {})  # one chat history per source
+messages = chats.setdefault(ns, [])
+
+
+# --- Sidebar ------------------------------------------------------------------
 with st.sidebar:
     st.markdown("### 📚 Docs Assistant")
-    st.caption("Answers questions about LangChain, LangGraph and Deep Agents using only the official docs, and cites them.")
+    st.caption("Answers questions about any documentation site using only its pages, and cites them.")
     st.divider()
-    size = index_size()
-    st.metric("Chunks in Pinecone", f"{size:,}" if size is not None else "unavailable")
+    st.metric("Chunks in this source", f"{sources.get(ns, 0):,}")
     st.markdown(f"**Index:** `{os.environ.get('INDEX_NAME', '?')}`")
     st.markdown("**Model:** `gpt-5.2`  \n**Embeddings:** `text-embedding-3-small`")
     st.divider()
     if st.button("Clear chat", use_container_width=True):
-        st.session_state.messages = []
+        chats[ns] = []
         st.rerun()
     st.caption("Built with LangChain · Pinecone · Tavily · Streamlit")
 
-# Motion-graphics stage (frontend/static/background.js), fed real index stats.
+# Motion-graphics stage (frontend/static/background.js), fed the selected source's stats.
 page_background(
     {
         "index": os.environ.get("INDEX_NAME", "langchain-docs"),
-        "chunks": size or 0,
-        "pages": size or 0,
+        "source": "docs.langchain.com" if ns == "" else ns,
+        "chunks": sources.get(ns, 0),
+        "pages": sources.get(ns, 0),
         "llm": "gpt-5.2",
     }
 )
 
 
 # --- Layout -------------------------------------------------------------------
-st.title("LangChain Documentation Assistant")
-st.caption("An AI agent that searches the LangChain docs for you, then answers with sources.")
+st.title("Documentation Assistant")
+st.caption("Point it at a documentation site, then ask questions. Answers come only from those pages, with sources.")
 
 tab_ask, tab_live, tab_how = st.tabs(["💬 Ask the docs", "🤖 Live agent", "🧠 How it works"])
 
 
-def show_sources(sources: list[str]) -> None:
-    if sources:
-        with st.expander(f"Sources ({len(sources)})"):
-            for url in sources:
+def show_sources(urls: list[str]) -> None:
+    if urls:
+        with st.expander(f"Sources ({len(urls)})"):
+            for url in urls:
                 st.markdown(f"- [{url}]({url})")
+
+
+def add_site(raw_url: str, focus: str) -> None:
+    """Crawl and index a site into its own namespace, then select it."""
+    try:
+        url = validate_url(raw_url)
+    except ValueError as e:
+        st.error(str(e))
+        return
+    new_ns = namespace_for(url)
+    if new_ns in sources:                         # already indexed: just switch to it
+        st.session_state.pending_source = new_ns
+        st.rerun()
+    if len(sources) - 1 >= MAX_SOURCES:
+        st.error(f"This demo holds {MAX_SOURCES} sites and is full. Pick one from the list.")
+        return
+    if st.session_state.get("crawls", 0) >= CRAWLS_PER_SESSION:
+        st.error(f"You can add {CRAWLS_PER_SESSION} sites per visit.")
+        return
+    st.session_state.crawls = st.session_state.get("crawls", 0) + 1
+
+    signal = st.empty()  # progress signal for the stage animation
+    messages_for = {
+        "crawl": lambda d: f"🕷️ Crawling {d['url']}…",
+        "documents": lambda d: f"📄 {d['pages']} pages crawled, {d['documents']} with readable text",
+        "chunks": lambda d: f"✂️ Split into {d['chunks']} chunks",
+        "store": lambda d: f"🧮 Embedding and saving {d['chunks']} chunks to Pinecone…",
+    }
+    with st.status(f"Indexing {url}", expanded=True) as status:
+        def on_event(stage: str, **d) -> None:
+            if stage in messages_for:
+                status.write(messages_for[stage](d))
+            with signal:
+                background_ingest(stage, source=new_ns, **{k: v for k, v in d.items() if k != "url"})
+
+        try:
+            stats = ingest_site(url, new_ns, instructions=focus.strip() or None, on_event=on_event, **CRAWL)
+        except Exception as e:
+            status.update(label=f"Couldn't index {url}", state="error")
+            st.error(str(e))
+            return
+        status.update(label=f"Indexed {stats['pages']} pages · {stats['chunks']} chunks", state="complete")
+
+    get_sources.clear()
+    st.session_state.pending_source = new_ns
+    st.session_state.flash = f"Added **{new_ns}**: {stats['pages']} pages, {stats['chunks']} chunks. Ask away."
+    st.rerun()
 
 
 # --- Ask the docs -------------------------------------------------------------
 with tab_ask:
-    if "messages" not in st.session_state:
-        st.session_state.messages = []  # [{"role", "content", "sources"}]
+    if flash := st.session_state.pop("flash", None):
+        st.success(flash)
 
-    if not st.session_state.messages:
-        st.info("Try: *What are deep agents?* · *When should I use LangGraph instead of LangChain?*")
+    st.selectbox(
+        "Ask about",
+        list(sources),
+        key="source",
+        format_func=lambda n: f"{label(n)} · {sources[n]} chunks",
+    )
+    with st.expander("➕ Add a documentation site"):
+        with st.form("add_site", clear_on_submit=True, border=False):
+            url_in = st.text_input("Docs URL", placeholder="https://docs.pydantic.dev")
+            focus_in = st.text_input("Focus (optional)", placeholder="e.g. only the API reference")
+            submitted = st.form_submit_button("Crawl & index", type="primary")
+        st.caption(f"Up to {CRAWL['limit']} pages per site · {CRAWLS_PER_SESSION} sites per visit.")
+        if submitted:
+            add_site(url_in, focus_in)
 
-    for msg in st.session_state.messages:
+    if not messages:
+        st.info(
+            "Try: *What are deep agents?* · *When should I use LangGraph instead of LangChain?*"
+            if ns == "" else f"Ask anything about **{label(ns)}**."
+        )
+
+    for msg in messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             show_sources(msg.get("sources", []))
 
-    if prompt := st.chat_input("Ask about LangChain, LangGraph, Deep Agents…"):
+    if prompt := st.chat_input(f"Ask about {label(ns)}…"):
         # Pass prior turns so follow-up questions have context.
-        history = [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        history = [{"role": m["role"], "content": m["content"]} for m in messages]
+        messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
@@ -115,10 +194,10 @@ with tab_ask:
             with bg_signal:
                 background_step(1, query=prompt)
 
-            answer, sources, found_docs = "", [], False
+            answer, cited, found_docs = "", [], False
             start = time.time()
             try:
-                for event in stream_llm(prompt, history):
+                for event in stream_llm(prompt, history, namespace=ns):
                     if event["type"] == "thinking":
                         step = 3 if found_docs else 1  # thinking after retrieval == writing
                         status.write("✍️ Reading the docs and writing an answer…" if found_docs else "🧠 Planning…")
@@ -128,7 +207,7 @@ with tab_ask:
                     elif event["type"] == "results":
                         step, found_docs = 3, True
                         new = [d.metadata.get("source", "unknown") for d in event["docs"]]
-                        sources += [u for u in dict.fromkeys(new) if u not in sources]
+                        cited += [u for u in dict.fromkeys(new) if u not in cited]
                         status.write(f"📄 Found {len(event['docs'])} matching chunks")
                     elif event["type"] == "answer":
                         answer, step = event["text"], 4
@@ -139,9 +218,9 @@ with tab_ask:
 
                 elapsed = time.time() - start
                 with bg_signal:
-                    background_step(4, query=prompt, sources=len(sources), seconds=f"{elapsed:.1f}")
+                    background_step(4, query=prompt, sources=len(cited), seconds=f"{elapsed:.1f}")
                 status.update(
-                    label=f"Done in {elapsed:.1f}s · {len(sources)} sources",
+                    label=f"Done in {elapsed:.1f}s · {len(cited)} sources",
                     state="complete",
                     expanded=False,
                 )
@@ -150,9 +229,9 @@ with tab_ask:
                 answer = f"⚠️ The agent failed: `{e}`"
 
             st.markdown(answer or "_No answer was produced._")
-            show_sources(sources)
+            show_sources(cited)
 
-        st.session_state.messages.append({"role": "assistant", "content": answer, "sources": sources})
+        messages.append({"role": "assistant", "content": answer, "sources": cited})
 
 
 # --- Live agent (replays frontend/demo_runs.json) ----------------------------
@@ -176,12 +255,12 @@ with tab_how:
     with col1:
         st.markdown(
             """
-#### 1 · Ingestion (offline, `ingestion.py`)
-1. **Crawl:** Tavily crawls the LangChain docs site.
+#### 1 · Ingestion (`ingestion.py`)
+1. **Crawl:** Tavily crawls the docs site (built-in: LangChain; or one you add).
 2. **Documents:** each page becomes a LangChain `Document` with its URL.
 3. **Chunk:** pages are split into ~4,000-character chunks.
 4. **Store:** chunks are embedded with OpenAI and saved to Pinecone
-   in batches, concurrently.
+   in batches, concurrently, in a namespace per site.
 """
         )
     with col2:

@@ -81,3 +81,8 @@ def background_step(step: int, **info: Any) -> None:
     info: query; on step 4 also sources and seconds.
     """
     st.html(_signal(live={"step": step, **info}))
+
+
+def background_ingest(stage: str, **info: Any) -> None:
+    """Report indexing progress to the stage (stage names from ingestion.ingest_site)."""
+    st.html(_signal(live={"ingest": stage, **info}))

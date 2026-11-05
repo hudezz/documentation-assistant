@@ -138,6 +138,18 @@ You can also ask a single question from the terminal:
 uv run core.py
 ```
 
+## Tracing (LangSmith)
+
+Add to `.env` (and to the app's Secrets when deployed):
+
+```env
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=...
+LANGSMITH_PROJECT=documentation-assistant
+```
+
+Every question becomes an `answer_question` trace (model calls, `retrieve_context` tool calls, Pinecone results), and every indexed site an `ingest_site` trace with `crawl`, `split` and `store` steps. EU accounts also need `LANGSMITH_ENDPOINT=https://eu.api.smith.langchain.com`.
+
 ## Deploy (Streamlit Community Cloud)
 
 1. At [share.streamlit.io](https://share.streamlit.io), create an app from this repo with main file `frontend/app.py` and Python 3.11.

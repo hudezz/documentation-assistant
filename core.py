@@ -14,6 +14,7 @@ from langchain.messages import ToolMessage
 from langchain.tools import tool
 from langchain_pinecone import PineconeVectorStore
 from langchain_openai import OpenAIEmbeddings
+from langsmith import traceable
 
 load_dotenv()
 
@@ -52,6 +53,7 @@ SYSTEM_PROMPT = (
 )
 
 
+@traceable(name="answer_question")
 def stream_llm(query: str, history: List[Dict[str, str]] | None = None,
                namespace: str = "") -> Iterator[Dict[str, Any]]:
     """Run the agent and yield a progress event after each step.
@@ -86,6 +88,7 @@ def stream_llm(query: str, history: List[Dict[str, str]] | None = None,
                     yield {"type": "answer", "text": message.content}
 
 
+@traceable(name="answer_question")
 def run_llm(query: str, namespace: str = "") -> Dict[str, Any]:
     """Answer `query`. Returns {"answer": str, "context": list[Document]}."""
     agent = create_agent(model, tools=[make_retriever_tool(namespace)], system_prompt=SYSTEM_PROMPT)

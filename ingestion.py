@@ -19,6 +19,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_tavily import TavilyCrawl
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langsmith import traceable
 
 from logger import (Colors, log_error, log_header, log_info, log_success,
                     log_warning)
@@ -49,6 +50,7 @@ def _noop(stage: str, **details: Any) -> None:
     pass
 
 
+@traceable(name="crawl", run_type="tool")
 def crawl_site(url: str, instructions: Optional[str] = None, max_depth: int = 3,
                limit: Optional[int] = None, extract_depth: str = "advanced"):
     """Crawl `url`. Returns the Tavily response, or None on error."""
@@ -78,6 +80,7 @@ def make_documents(tavily_crawl_results) -> List[Document]:
     return all_docs
 
 
+@traceable(name="split")
 def split_documents(all_docs: List[Document]) -> List[Document]:
     log_header("DOCUMENT CHUNKING PHASE")
     log_info(
@@ -90,6 +93,7 @@ def split_documents(all_docs: List[Document]) -> List[Document]:
     return splitted_docs
 
 
+@traceable(name="store")
 async def index_documents_async(splitted_docs: List[Document], namespace: str = "",
                                 batch_size: int = 50, on_event: Event = _noop) -> int:
     """Embed and upsert chunks into `namespace`, all batches concurrently.
@@ -131,6 +135,8 @@ def print_summary(pages: int, all_docs, splitted_docs) -> None:
     log_info(f"   • Chunks created: {len(splitted_docs)}")
 
 
+# Grouped into one LangSmith trace per site when LANGSMITH_TRACING=true (no-op otherwise).
+@traceable(name="ingest_site")
 def ingest_site(url: str, namespace: str = "", *, instructions: Optional[str] = None,
                 max_depth: int = 3, limit: Optional[int] = None, extract_depth: str = "advanced",
                 batch_size: int = 500, on_event: Event = _noop) -> Dict[str, int]:

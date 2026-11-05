@@ -26,8 +26,9 @@ sys.path.insert(0, str(ROOT))
 
 # API keys: Streamlit Cloud secrets when deployed, .env locally.
 REQUIRED_KEYS = ("OPENAI_API_KEY", "PINECONE_API_KEY", "TAVILY_API_KEY", "INDEX_NAME")
+OPTIONAL_KEYS = ("LANGSMITH_TRACING", "LANGSMITH_API_KEY", "LANGSMITH_PROJECT", "LANGSMITH_ENDPOINT")
 try:
-    for key in REQUIRED_KEYS:
+    for key in REQUIRED_KEYS + OPTIONAL_KEYS:
         if not os.environ.get(key) and key in st.secrets:
             os.environ[key] = str(st.secrets[key])
 except Exception:  # no secrets.toml (local run)

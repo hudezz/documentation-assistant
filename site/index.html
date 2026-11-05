@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LangChain Docs Assistant</title>
-  <meta name="description" content="An AI agent that answers questions about LangChain, LangGraph and Deep Agents from the official docs, with citations. Built with LangChain, Pinecone, Tavily and Streamlit." />
+  <title>Documentation Assistant</title>
+  <meta name="description" content="Point it at any documentation site, then ask questions. An AI agent answers from those pages only, with citations. Built with LangChain, Pinecone, Tavily and Streamlit." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Inter+Tight:wght@700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
@@ -25,11 +25,11 @@
     <section class="hero">
       <div class="hero-copy">
         <p class="eyebrow">Agentic RAG · LangChain · Pinecone</p>
-        <h1>Ask the LangChain docs. Get answers with sources.</h1>
+        <h1>Point it at any docs site. Get answers with sources.</h1>
         <p class="lede">
-          An AI agent that searches the official LangChain documentation, pulls the most
-          relevant chunks from a Pinecone index, and answers with citations. When the docs
-          don't cover something, it says so instead of guessing.
+          Paste a documentation URL and the app crawls it, indexes it in Pinecone, and lets
+          you ask questions. An AI agent answers only from those pages and cites them. When
+          the docs don't cover something, it says so instead of guessing.
         </p>
         <div class="cta">
           <a class="btn primary" href="https://github.com/hudezz/documentation-assistant">View the code</a>
@@ -60,10 +60,10 @@
         <div class="card">
           <p class="card-kicker">Ingestion · <code>ingestion.py</code></p>
           <ol>
-            <li><strong>Crawl</strong> the docs with Tavily.</li>
+            <li><strong>Crawl</strong> the site you enter with Tavily (the LangChain docs are built in).</li>
             <li><strong>Convert</strong> each page to a LangChain <code>Document</code> with its URL.</li>
             <li><strong>Chunk</strong> into ~4,000-character pieces with 200 characters of overlap.</li>
-            <li><strong>Embed and store</strong> in Pinecone, in batches written concurrently with <code>asyncio</code>.</li>
+            <li><strong>Embed and store</strong> in Pinecone, one namespace per site, in batches written concurrently with <code>asyncio</code>.</li>
           </ol>
         </div>
         <div class="card">

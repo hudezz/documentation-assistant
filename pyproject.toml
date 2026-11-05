@@ -1,40 +1,26 @@
 [project]
 name = "documentation-assistant"
 version = "0.1.0"
-description = "LangChain documentation helper"
+description = "Chat with any documentation site: crawl, index in Pinecone, ask with cited answers."
 requires-python = ">=3.11"
 dependencies = [
-    "beautifulsoup4",
-    "black",
-    "tiktoken",
-    "openai",
-    "unstructured",
-    "nltk",
-    "fastapi",
-    "jinja2",
-    "uvicorn",
-    "streamlit",
-    "streamlit-chat",
-    "tqdm",
-    "isort",
-    "langchainhub",
-    "firecrawl-py",
-    "langchain-community",
-    "langsmith",
-    "pillow",
     "certifi",
-    "langchain-chroma",
-    "python-dotenv",
-    "langchain-tavily",
-    "langchain-pinecone",
-    "langchain>=1.4.7",
-    "tavily>=1.1.0",
     "httpx<1",
+    "langchain>=1.4.7",
+    "langchain-openai",
+    "langchain-pinecone",
+    "langchain-tavily",
+    "langchain-text-splitters",
+    "pinecone",
+    "python-dotenv",
+    "streamlit",
 ]
 
 [dependency-groups]
 dev = [
+    "black",
     "ipykernel",
+    "isort",
 ]
 
 [tool.uv]

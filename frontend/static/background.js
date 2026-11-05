@@ -54,7 +54,7 @@
   let ST = { x: 0, y: 0, w: 0, h: 0 }, V = false, hidden = false, compact = false;
   let layoutCheck = 0, stageKey = "";
   let scene = 0, t = 0, time = 0, last = 0;
-  const live = { hold: null, done: false };
+  const live = { hold: null, done: false, label: "" };
 
   // ------------------------------------------------------------ setup
   function ensure() {
@@ -383,8 +383,24 @@
 
   // ------------------------------------------------------------ live hooks
   // step: 1 planning · 2 searching · 3 writing · 4 done
+  // Indexing a new site: show the matching ingestion scene and hold on it.
+  const INGEST_SCENE = { crawl: 0, documents: 0, chunks: 1, store: 2, batch: 3 };
+  function liveIngest(info) {
+    if (info.source) D.source = info.source;
+    if (info.pages) D.pages = info.pages;
+    if (info.chunks) D.chunks = info.chunks;
+    live.label = "● LIVE · INDEXING";
+    if (info.ingest === "done") { live.hold = null; scene = 3; t = 0; return; }
+    const target = INGEST_SCENE[info.ingest];
+    if (target === undefined) return;
+    if (scene !== target) { scene = target; t = 0; }
+    live.hold = target;
+  }
+
   function liveStep(info) {
+    if (info && info.ingest) return liveIngest(info);
     const { step, query, sources, seconds } = info || {};
+    live.label = "● LIVE · YOUR QUESTION";
     if (query) D.query = query;
     if (step >= 1 && step <= 3) {
       D.status = step === 1 ? "planning" : step === 2 ? "searching pinecone" : "writing answer";
@@ -408,7 +424,7 @@
     scramble(`${num} / 0${SCENES.length}   ${sc.lane}`, cx, cy, 0.1, sc.dur, rgba(INK, sc.cut ? 0.9 : 0.55));
     if (live.hold !== null || D.status === "done" && scene === ANSWER) {
       ctx.fillStyle = rgba(sc.cut ? INK : GREEN, 0.95);
-      ctx.fillText("● LIVE · YOUR QUESTION", cx, cy + fs * 1.9);
+      ctx.fillText(live.label || "● LIVE", cx, cy + fs * 1.9);
     }
     // progress bar along the bottom of the stage: one segment per scene
     const seg = (ST.w - 32) / SCENES.length, by = ST.y + ST.h - 14;

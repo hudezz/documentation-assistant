@@ -1,15 +1,16 @@
-# LangChain Documentation Assistant
+# Documentation Assistant
 
 **[Project site →](https://hudezz.github.io/documentation-assistant/)** · live pipeline animation and a replay of real agent runs, right in the browser.
 
-An AI agent that answers questions about **LangChain, LangGraph and Deep Agents** using only the official documentation, and shows you the pages it used.
+Point it at any documentation site, then ask questions. An AI agent answers using only that site's pages and shows you the pages it used. The LangChain docs come built in.
 
-You ask a question. The agent decides what to search for, pulls the most relevant chunks of the docs out of a Pinecone vector database, and writes an answer with citations. If the docs don't cover it, it says so instead of guessing. A Streamlit UI animates each step while the agent works.
+Paste a URL and the app crawls it, chunks it and indexes it in Pinecone, in its own namespace. Then you ask a question. The agent decides what to search for, pulls the most relevant chunks of the docs out of a Pinecone vector database, and writes an answer with citations. If the docs don't cover it, it says so instead of guessing. A Streamlit UI animates each step while the agent works.
 
 <!-- Add a GIF of the Live agent tab here: docs/demo.gif -->
 
 ## Features
 
+- **Bring any docs site:** paste a URL (and optionally a focus, like "only the API reference"). It's crawled, indexed into its own Pinecone namespace, and added to the source picker. The public demo caps crawls at 25 pages, 3 sites per visit and 12 sites in total.
 - **Agentic RAG:** a LangChain agent (`create_agent`) with a retrieval tool. The model chooses its own search queries and searches again when the first results aren't enough.
 - **Answers with citations:** every answer links the documentation pages it came from.
 - **Motion-graphics stage:** the whole architecture plays as a kinetic-typography sequence (Crawl → Chunk → Embed → Store → Search → Answer Complete) on its own stage beside the app, on every tab. The chat lives in a solid panel, so nothing moves behind the text you read or type. On phones the stage becomes a band above the chat. It shows real numbers from your index. When you ask a question, it cuts to the Search scene with your question, then shows your answer's real time and source count.
@@ -21,7 +22,7 @@ You ask a question. The agent decides what to search for, pulls the most relevan
 
 ```mermaid
 flowchart LR
-    subgraph Ingestion["Ingestion · ingestion.py (run once)"]
+    subgraph Ingestion["Ingestion · ingestion.py (per site)"]
         A[Tavily crawl<br/>docs site] --> B[Pages → LangChain<br/>Documents]
         B --> C[Split into<br/>chunks]
         C --> D[Embed + save to Pinecone<br/>batches, concurrently]
@@ -61,8 +62,9 @@ flowchart LR
 
 ```
 .
-├── ingestion.py           # crawl → documents → chunks → Pinecone
-├── core.py                # the agent: run_llm() and stream_llm()
+├── ingestion.py           # crawl → documents → chunks → Pinecone (ingest_site)
+├── core.py                # the agent: run_llm() and stream_llm(), per namespace
+├── sources.py             # indexed sites = Pinecone namespaces; URL validation
 ├── evaluation.py          # test harness wrapper (evaluation suite in progress)
 ├── record_demo.py         # records real runs for the Live agent tab
 ├── logger.py              # coloured console logging
@@ -83,7 +85,7 @@ flowchart LR
 └── .streamlit/config.toml # dark theme + static file serving
 ```
 
-The backend (`core.py`, `ingestion.py`) has no UI code, and the frontend calls the backend only through `stream_llm()`.
+The backend (`core.py`, `ingestion.py`, `sources.py`) has no UI code; the frontend calls it through `stream_llm()`, `ingest_site()` and `list_sources()`.
 
 ## Getting started
 
@@ -135,6 +137,18 @@ You can also ask a single question from the terminal:
 ```bash
 uv run core.py
 ```
+
+## Deploy (Streamlit Community Cloud)
+
+1. At [share.streamlit.io](https://share.streamlit.io), create an app from this repo with main file `frontend/app.py` and Python 3.11.
+2. In **Advanced settings → Secrets**, add:
+   ```toml
+   OPENAI_API_KEY = "..."
+   PINECONE_API_KEY = "..."
+   TAVILY_API_KEY = "..."
+   INDEX_NAME = "langchain-docs"
+   ```
+Dependencies install from `requirements.txt`, which is generated from `uv.lock` (`uv export --no-hashes --no-dev --no-emit-project -o requirements.txt`).
 
 ## Known limitations
 

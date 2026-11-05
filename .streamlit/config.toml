@@ -1,0 +1,11 @@
+[theme]
+base = "dark"
+primaryColor = "#7c8cff"
+backgroundColor = "#0b0f17"
+secondaryBackgroundColor = "#121826"
+textColor = "#e6eaf2"
+
+[server]
+headless = true
+# serves frontend/static/ at /app/static/
+enableStaticServing = true

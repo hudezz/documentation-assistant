@@ -1,0 +1,66 @@
+[
+  {
+    "question": "What are deep agents?",
+    "searches": [
+      "LangChain deep agents what are deep agents",
+      "Deep Agents SDK predefined tools prompts subagents documentation deep agents"
+    ],
+    "sources": [
+      "https://docs.langchain.com/oss/python/concepts/products",
+      "https://docs.langchain.com/build-overview",
+      "https://docs.langchain.com/",
+      "https://docs.langchain.com/oss/python/langchain/agents",
+      "https://reference.langchain.com/python/deepagents/middleware/subagents/SubAgentMiddleware",
+      "https://docs.langchain.com/oss/python/deepagents/retrieval"
+    ],
+    "answer": "In the LangChain ecosystem, Deep Agents refers to an agent “harness” (the Deep Agents SDK) aimed at building more autonomous agents for complex, non-deterministic tasks. In the LangChain docs’ product taxonomy, harnesses sit above agent frameworks/runtimes and provide more “ready-to-run” building blocks like predefined tools, prompts, and subagents. Sources: LangChain “products” concept page (Harness row: “Deep Agents SDK …”; value add: “Predefined tools, Prompts,…",
+    "seconds": 11.0
+  },
+  {
+    "question": "When should I use LangGraph instead of LangChain?",
+    "searches": [
+      "When should I use LangGraph instead of LangChain? LangGraph vs LangChain when to use"
+    ],
+    "sources": [
+      "https://docs.langchain.com/oss/python/concepts/products",
+      "https://docs.langchain.com/",
+      "https://docs.langchain.com/oss/python/langchain/agents",
+      "https://docs.langchain.com/build-overview"
+    ],
+    "answer": "Use LangGraph instead of (or in addition to) LangChain when you need runtime/orchestration features for production-grade agents, especially: - Low-level control over execution flow (explicit state machines / graphs rather than a mostly linear “agent loop”). - Long-running, stateful workflows/agents (e.g., multi-step processes that may pause and resume). - Durability and persistence (recoverable execution, saving/restoring state). - Streaming and human-in-the-loop (HITL)…",
+    "seconds": 7.1
+  },
+  {
+    "question": "How do subagents work in Deep Agents?",
+    "searches": [
+      "Deep Agents subagents how do subagents work"
+    ],
+    "sources": [
+      "https://reference.langchain.com/python/deepagents/middleware/subagents/SubAgentMiddleware",
+      "https://docs.langchain.com/build-overview",
+      "https://docs.langchain.com/oss/python/langchain/ui",
+      "https://docs.langchain.com/oss/python/deepagents/quickstart"
+    ],
+    "answer": "In Deep Agents, “subagents” are separate, fully-specified agents (their own model + tools + optional system prompt) that the main agent can delegate work to via a special task tool that’s injected by middleware. Mechanism: SubAgentMiddleware You enable subagents by adding SubAgentMiddleware(...) to your main agent’s middleware list and providing a list of subagent specs. Each subagent must specify at least: - model - tools Optional fields like interrupton (per-subagent) are…",
+    "seconds": 11.4
+  },
+  {
+    "question": "How do I trace my agent with LangSmith?",
+    "searches": [
+      "LangChain LangSmith trace agent how to trace an agent with LangSmith",
+      "trace LangChain agents with LangSmith LANGSMITH_TRACING V2 env var",
+      "site:docs.langchain.com langsmith trace-with-langchain LANGSMITH_API_KEY LANGSMITH_TRACING",
+      "https://docs.langchain.com/langsmith/trace-with-langchain tracing v2 env variables",
+      "trace-with-langchain page content LANGSMITH_TRACING_V2 LANGSMITH_PROJECT"
+    ],
+    "sources": [
+      "https://docs.langchain.com/",
+      "https://docs.langchain.com/build-overview",
+      "https://docs.langchain.com/oss/python/langchain/ui",
+      "https://docs.langchain.com/oss/python/deepagents/quickstart",
+      "https://docs.langchain.com/oss/python/langchain/agents"
+    ],
+    "answer": "To trace an agent built with LangChain in LangSmith, you generally do two things: 1) Configure LangSmith credentials + enable tracing - Set your LangSmith API key and turn tracing on (and optionally pick a project). LangSmith is LangChain’s platform to “trace, debug, and observe agents in production” and LangChain provides an integration page specifically for tracing LangChain agents. Source: LangChain docs overview of tracing/monitoring with LangSmith and the “Trace…",
+    "seconds": 17.0
+  }
+]

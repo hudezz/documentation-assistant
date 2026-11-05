@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LangChain Docs Assistant</title>
+  <meta name="description" content="An AI agent that answers questions about LangChain, LangGraph and Deep Agents from the official docs, with citations. Built with LangChain, Pinecone, Tavily and Streamlit." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="site.css" />
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="#top">docs-assistant</a>
+    <nav>
+      <a href="#replay">Replay</a>
+      <a href="#how">How it works</a>
+      <a href="#run">Run it</a>
+      <a class="btn small" href="https://github.com/hudezz/documentation-assistant">GitHub ↗</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Agentic RAG · LangChain · Pinecone</p>
+        <h1>Ask the LangChain docs. Get answers with sources.</h1>
+        <p class="lede">
+          An AI agent that searches the official LangChain documentation, pulls the most
+          relevant chunks from a Pinecone index, and answers with citations. When the docs
+          don't cover something, it says so instead of guessing.
+        </p>
+        <div class="cta">
+          <a class="btn primary" href="https://github.com/hudezz/documentation-assistant">View the code</a>
+          <a class="btn" href="#run">Run it locally</a>
+        </div>
+      </div>
+      <!-- background.js paints the pipeline animation inside this element -->
+      <div id="docs-stage" class="stage" role="img"
+           aria-label="Animation of the pipeline: crawl, chunk, embed, store, search, answer"></div>
+    </section>
+
+    <section id="replay" class="section">
+      <div class="section-head">
+        <h2>The agent at work</h2>
+        <p>
+          A replay of real recorded runs: the search queries the agent chose, the pages
+          Pinecone returned, and the answers it wrote.
+        </p>
+      </div>
+      <iframe class="replay" src="replay.html" title="Replay of recorded agent runs" loading="lazy"></iframe>
+    </section>
+
+    <section id="how" class="section">
+      <div class="section-head">
+        <h2>How it works</h2>
+      </div>
+      <div class="cols">
+        <div class="card">
+          <p class="card-kicker">Ingestion · <code>ingestion.py</code></p>
+          <ol>
+            <li><strong>Crawl</strong> the docs with Tavily.</li>
+            <li><strong>Convert</strong> each page to a LangChain <code>Document</code> with its URL.</li>
+            <li><strong>Chunk</strong> into ~4,000-character pieces with 200 characters of overlap.</li>
+            <li><strong>Embed and store</strong> in Pinecone, in batches written concurrently with <code>asyncio</code>.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <p class="card-kicker">Answering · <code>core.py</code></p>
+          <ol>
+            <li>The agent reads the question and <strong>decides what to search for</strong>.</li>
+            <li>It calls <code>retrieve_context</code>, a similarity search over Pinecone, as many times as it needs.</li>
+            <li>It <strong>answers only from the retrieved chunks</strong> and cites each page.</li>
+            <li>The Streamlit UI streams every step as it happens.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="stack" class="section">
+      <div class="section-head"><h2>Stack</h2></div>
+      <ul class="stack">
+        <li><span>Agent</span>LangChain 1.x <code>create_agent</code></li>
+        <li><span>LLM</span>OpenAI <code>gpt-5.2</code></li>
+        <li><span>Embeddings</span><code>text-embedding-3-small</code></li>
+        <li><span>Vector DB</span>Pinecone serverless</li>
+        <li><span>Crawler</span>Tavily Crawl</li>
+        <li><span>UI</span>Streamlit + custom canvas / HTML</li>
+      </ul>
+    </section>
+
+    <section id="run" class="section">
+      <div class="section-head">
+        <h2>Run it locally</h2>
+        <p>Needs Python 3.11+, <a href="https://docs.astral.sh/uv/">uv</a>, and OpenAI, Pinecone and Tavily API keys in <code>.env</code>.</p>
+      </div>
+      <pre class="code"><code>git clone https://github.com/hudezz/documentation-assistant
+cd documentation-assistant
+uv sync
+
+uv run ingestion.py                    # crawl the docs and fill Pinecone
+uv run streamlit run frontend/app.py   # open the app</code></pre>
+      <p class="note">Full setup, including creating the Pinecone index, is in the <a href="https://github.com/hudezz/documentation-assistant#getting-started">README</a>.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>Apache-2.0</span>
+    <a href="https://github.com/hudezz">github.com/hudezz</a>
+  </footer>
+
+  <!-- stats the stage animation displays -->
+  <div class="docs-bg-signal" hidden data-config='{"index": "langchain-docs", "chunks": 12, "pages": 12, "llm": "gpt-5.2"}'></div>
+  <script src="assets/background.js"></script>
+</body>
+</html>

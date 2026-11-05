@@ -1,0 +1,176 @@
+/* Colours match .streamlit/config.toml so the iframe blends into the page. */
+:root {
+  --bg: #0b0f17;
+  --panel: #121826;
+  --line: #263044;
+  --text: #e6eaf2;
+  --muted: #8b95a8;
+  --accent: #7c8cff;
+  --accent-soft: rgba(124, 140, 255, 0.14);
+  --ok: #3dd68c;
+  --ok-soft: rgba(61, 214, 140, 0.14);
+  --tool: #f5b454;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: transparent;
+  color: var(--text);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+}
+
+.viz { padding: 4px 2px; }
+.viz.static .loop-only { display: none; }
+
+/* ---------- top bar ---------- */
+.bar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.live {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 600 11px var(--mono); letter-spacing: 0.08em; color: var(--ok);
+  background: var(--ok-soft); padding: 3px 9px; border-radius: 999px;
+}
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--ok);
+  animation: blink 1.6s ease-in-out infinite;
+}
+.bar-title { font-weight: 600; }
+.bar-note { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+/* ---------- pipeline ---------- */
+.pipeline {
+  display: flex; align-items: flex-start;
+  padding: 6px 4px 2px;
+}
+.node {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  flex: 0 1 92px; min-width: 0;
+}
+.circle {
+  position: relative;
+  width: 50px; height: 50px; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 2px solid var(--line); background: var(--panel); color: var(--muted);
+  transition: border-color .3s, background .3s, color .3s;
+}
+.circle svg { width: 22px; height: 22px; }
+.node-label { font-size: 12px; color: var(--muted); text-align: center; transition: color .3s; }
+
+/* active node: glowing pulse + a ring orbiting around it */
+.node.active .circle {
+  border-color: var(--accent); color: var(--accent); background: var(--accent-soft);
+  animation: pulse 1.5s ease-out infinite;
+}
+.node.active .circle::after {
+  content: ""; position: absolute; inset: -7px; border-radius: 50%;
+  border: 2px solid transparent; border-top-color: var(--accent);
+  animation: spin 1s linear infinite;
+}
+.node.active .node-label { color: var(--text); font-weight: 600; }
+
+/* finished node */
+.node.done .circle { border-color: var(--ok); color: var(--ok); background: var(--ok-soft); }
+.node.done .node-label { color: var(--text); }
+
+/* wires between nodes: data packets travel along the active wire */
+.wire {
+  position: relative; flex: 1; height: 2px; margin-top: 24px; min-width: 16px;
+  background: var(--line); border-radius: 2px; transition: background .3s;
+}
+.wire.done { background: var(--ok); }
+.wire.flow { background: linear-gradient(90deg, var(--ok), var(--accent)); }
+.packet {
+  position: absolute; top: -3px; left: 0;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 10px var(--accent);
+  animation: travel 1.3s linear infinite;
+}
+.packet:nth-child(2) { animation-delay: .43s; }
+.packet:nth-child(3) { animation-delay: .86s; }
+
+/* ---------- loop-mode panels ---------- */
+.panels {
+  /* minmax(0, …) lets columns shrink below their text width, so long log
+     lines get an ellipsis instead of pushing the layout off-screen */
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 14px;
+  margin-top: 20px;
+}
+.panel {
+  background: rgba(18, 24, 38, 0.72); border: 1px solid var(--line); border-radius: 12px;
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  padding: 14px 16px; height: 380px; overflow: hidden; min-width: 0;
+}
+.panel h3 {
+  font: 600 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); margin: 0 0 8px;
+}
+.panel h3:not(:first-child) { margin-top: 16px; }
+
+/* newest log line stays at the bottom; old lines scroll off the top */
+.console {
+  font: 12.5px/1.7 var(--mono);
+  display: flex; flex-direction: column; justify-content: flex-end;
+  height: calc(100% - 24px); overflow: hidden;
+}
+.log { flex: none; animation: rise .35s ease-out both; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tag { display: inline-block; width: 72px; font-weight: 600; }
+.tag.agent { color: var(--accent); }
+.tag.tool { color: var(--tool); }
+.tag.pinecone { color: var(--ok); }
+.tag.done { color: var(--ok); }
+
+.question { font-size: 16px; font-weight: 600; min-height: 24px; }
+.answer { color: var(--text); min-height: 60px; }
+.caret {
+  display: inline-block; width: 7px; height: 1em; margin-left: 2px;
+  background: var(--accent); vertical-align: text-bottom;
+  animation: blink 0.9s steps(1) infinite;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+.chip {
+  font: 11.5px var(--mono); color: var(--ok);
+  background: var(--ok-soft); border: 1px solid rgba(61, 214, 140, 0.3);
+  padding: 3px 8px; border-radius: 6px;
+  animation: slide-in .4s ease-out both;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ---------- animations ---------- */
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(124, 140, 255, 0.55); }
+  100% { box-shadow: 0 0 0 16px rgba(124, 140, 255, 0); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes travel {
+  0%   { left: 0; opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { left: calc(100% - 8px); opacity: 0; }
+}
+@keyframes blink { 50% { opacity: 0.25; } }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes slide-in { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+
+/* small screens: stack the panels */
+@media (max-width: 640px) {
+  .panels { grid-template-columns: minmax(0, 1fr); }
+  .panel { height: 170px; }
+  .panel:last-child { height: auto; }
+  .chips { max-height: 54px; overflow: hidden; }
+  .circle { width: 40px; height: 40px; }
+  .circle svg { width: 18px; height: 18px; }
+  .wire { margin-top: 19px; }
+  .node-label { font-size: 10.5px; }
+  .bar-note { margin-left: 0; }
+}
+
+/* respect people who turn animations off */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

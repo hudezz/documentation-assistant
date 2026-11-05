@@ -1,0 +1,41 @@
+[project]
+name = "documentation-assistant"
+version = "0.1.0"
+description = "LangChain documentation helper"
+requires-python = ">=3.11"
+dependencies = [
+    "beautifulsoup4",
+    "black",
+    "tiktoken",
+    "openai",
+    "unstructured",
+    "nltk",
+    "fastapi",
+    "jinja2",
+    "uvicorn",
+    "streamlit",
+    "streamlit-chat",
+    "tqdm",
+    "isort",
+    "langchainhub",
+    "firecrawl-py",
+    "langchain-community",
+    "langsmith",
+    "pillow",
+    "certifi",
+    "langchain-chroma",
+    "python-dotenv",
+    "langchain-tavily",
+    "langchain-pinecone",
+    "langchain>=1.4.7",
+    "tavily>=1.1.0",
+    "httpx<1",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel",
+]
+
+[tool.uv]
+prerelease = "allow"

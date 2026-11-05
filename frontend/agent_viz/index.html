@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  Agent visualisation shown inside the Streamlit app.
+
+  components.py fills in the three placeholders before rendering:
+    {{STYLE}}   -> contents of style.css
+    {{CONFIG}}  -> JSON config, e.g. {"mode": "loop", "runs": [...]}
+                                 or {"mode": "static", "step": 2}
+    {{SCRIPT}}  -> contents of script.js
+
+  mode "loop":   the 24/7 "Live agent" demo — replays recorded runs forever.
+  mode "static": just the pipeline, lit up at one step (used in the chat tab
+                 while the real agent works).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>{{STYLE}}</style>
+</head>
+<body>
+  <div class="viz" id="viz">
+    <!-- top bar: only shown in loop mode -->
+    <header class="bar loop-only">
+      <span class="live"><span class="live-dot"></span>LIVE</span>
+      <span class="bar-title">Agent at work</span>
+      <span class="bar-note">replaying real recorded runs · <span id="run-count"></span></span>
+    </header>
+
+    <!-- the four-step pipeline, rendered by script.js -->
+    <div class="pipeline" id="pipeline"></div>
+
+    <!-- loop mode: what the agent is "saying" and what it produces -->
+    <div class="panels loop-only">
+      <section class="panel">
+        <h3>Agent log</h3>
+        <div class="console" id="console"></div>
+      </section>
+      <section class="panel">
+        <h3>Question</h3>
+        <p class="question" id="question"></p>
+        <h3>Sources from Pinecone</h3>
+        <div class="chips" id="chips"></div>
+        <h3>Answer</h3>
+        <p class="answer" id="answer"></p>
+      </section>
+    </div>
+  </div>
+
+  <script>window.VIZ_CONFIG = {{CONFIG}};</script>
+  <script>{{SCRIPT}}</script>
+</body>
+</html>

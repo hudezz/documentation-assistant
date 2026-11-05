@@ -1,0 +1,71 @@
+/* Page layout for the motion-graphics stage (background.js).
+   The app is a solid panel on the right; the stage fills the space to its
+   left, so nothing animates behind text or inputs. */
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@800&family=JetBrains+Mono:wght@500&display=swap");
+
+/* colour on <html> only: a painted <body> would cover the z-index:-1 canvas */
+html { background: #0b0f17 !important; }
+body { background: transparent !important; }
+
+/* z-index -1 puts the canvas under ALL page content (but above the page's
+   own background colour), whatever element Streamlit wraps the app in */
+#docs-bg {
+  position: fixed; inset: 0;
+  width: 100vw; height: 100vh;
+  z-index: -1; pointer-events: none;
+}
+
+/* let the canvas show through Streamlit's layers */
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+[data-testid="stHeader"],
+[data-testid="stBottom"],
+[data-testid="stBottomBlockContainer"] {
+  background: transparent !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Layout: motion graphics on a STAGE (left), the app in a SOLID PANEL (right).
+   The panel is opaque, so nothing animates behind text or the chat input.
+   background.js measures this panel and fits the stage into the space left.
+   ------------------------------------------------------------------------ */
+[data-testid="stMainBlockContainer"] {
+  width: min(780px, 56vw) !important;
+  max-width: min(780px, 56vw) !important;
+  margin: 4rem 24px 1.5rem auto !important;   /* pinned to the right edge */
+  padding: 2.25rem 2.25rem 3rem !important;
+  min-height: calc(100vh - 5.5rem);
+  background: #121826;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+/* phones / narrow windows: stage becomes a band on top, panel goes below it */
+@media (max-width: 899px) {
+  [data-testid="stMainBlockContainer"] {
+    width: auto !important;
+    max-width: none !important;
+    margin: calc(64px + 40vh + 16px) 12px 1rem !important;
+    padding: 1.5rem 1.1rem 2rem !important;
+    min-height: 0;
+  }
+}
+
+[data-testid="stSidebar"] {
+  background: #0f1420 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* surfaces inside the panel */
+[data-testid="stChatMessage"],
+[data-testid="stExpander"] details,
+[data-testid="stChatInput"] {
+  background: #0e1320 !important;
+  border-radius: 12px;
+}
+[data-testid="stChatInput"] { border: 1px solid rgba(255, 255, 255, 0.1); }
+
+/* hidden signal elements read by background.js */
+.stElementContainer:has(.docs-bg-signal) { display: none !important; }

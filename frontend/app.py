@@ -58,15 +58,15 @@ CRAWLS_PER_SESSION = 3
 
 
 @st.cache_data(ttl=60, show_spinner=False)
-def get_sources() -> dict:
-    """{namespace: chunk count}; empty if Pinecone is unreachable."""
+def get_sources() -> tuple[dict, str | None]:
+    """({namespace: chunk count}, error message if Pinecone is unreachable)."""
     try:
-        return list_sources()
-    except Exception:
-        return {"": 0}
+        return list_sources(), None
+    except Exception as e:
+        return {"": 0}, f"{type(e).__name__}: {e}"
 
 
-sources = get_sources()
+sources, pinecone_error = get_sources()
 if "pending_source" in st.session_state:          # set after indexing a new site
     st.session_state.source = st.session_state.pop("pending_source")
 if st.session_state.get("source") not in sources:
@@ -167,6 +167,9 @@ def add_site(raw_url: str, focus: str) -> None:
 with tab_ask:
     if flash := st.session_state.pop("flash", None):
         st.success(flash)
+    if pinecone_error:
+        st.error(f"Can't reach the Pinecone index `{os.environ.get('INDEX_NAME')}`. "
+                 f"Check PINECONE_API_KEY and INDEX_NAME.\n\n`{pinecone_error[:300]}`")
 
     st.selectbox(
         "Ask about",

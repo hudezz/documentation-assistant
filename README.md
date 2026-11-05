@@ -1,6 +1,6 @@
 # Documentation Assistant
 
-**[Project site →](https://hudezz.github.io/documentation-assistant/)** · live pipeline animation and a replay of real agent runs, right in the browser.
+**[Try the app →](https://hudezz-docs-assistant.streamlit.app/)** · **[Project site →](https://hudezz.github.io/documentation-assistant/)**
 
 Point it at any documentation site, then ask questions. An AI agent answers using only that site's pages and shows you the pages it used. The LangChain docs come built in.
 

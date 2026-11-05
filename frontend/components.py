@@ -50,7 +50,7 @@ def live_agent_demo(runs: List[Dict[str, Any]]) -> None:
 
 
 # --- Motion-graphics stage ----------------------------------------------------
-# Served from /app/static/ (enableStaticServing). Loaded by URL because st.html's
+# Served from app/static/ (enableStaticServing). Loaded by URL because st.html's
 # DOMPurify pass drops inline scripts containing "<"-letter sequences.
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -69,7 +69,8 @@ def page_background(data: Dict[str, Any]) -> None:
     """Load the stage script (idempotent across reruns) and send it `data`."""
     v = _version()
     st.html(
-        _signal(config=data) + f'<script src="/app/static/background.js?v={v}"></script>',
+        # relative URL: Streamlit Cloud serves the app under a path prefix (/~/+/)
+        _signal(config=data) + f'<script src="app/static/background.js?v={v}"></script>',
         unsafe_allow_javascript=True,
     )
 

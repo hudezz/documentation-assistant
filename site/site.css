@@ -8,7 +8,7 @@
   --accent: #7c8cff;
   --ok: #3dd68c;
   --head: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
-  --body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
   --gutter: clamp(16px, 4vw, 48px);
 }

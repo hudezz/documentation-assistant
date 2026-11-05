@@ -103,7 +103,7 @@ Create a `.env` file in the project root:
 OPENAI_API_KEY=...
 PINECONE_API_KEY=...
 TAVILY_API_KEY=...
-INDEX_NAME=langchain-docs
+INDEX_NAME=document-assistant
 ```
 
 ### Create the Pinecone index
@@ -115,7 +115,7 @@ from pinecone import Pinecone, ServerlessSpec
 
 pc = Pinecone(api_key="...")
 pc.create_index(
-    name="langchain-docs",
+    name="document-assistant",
     dimension=1536,
     metric="cosine",
     spec=ServerlessSpec(cloud="aws", region="us-east-1"),
@@ -146,7 +146,7 @@ uv run core.py
    OPENAI_API_KEY = "..."
    PINECONE_API_KEY = "..."
    TAVILY_API_KEY = "..."
-   INDEX_NAME = "langchain-docs"
+   INDEX_NAME = "document-assistant"
    ```
 Dependencies install from `requirements.txt`, which is generated from `uv.lock` (`uv export --no-hashes --no-dev --no-emit-project -o requirements.txt`).
 

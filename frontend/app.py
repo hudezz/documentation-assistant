@@ -93,7 +93,7 @@ with st.sidebar:
 # Motion-graphics stage (frontend/static/background.js), fed the selected source's stats.
 page_background(
     {
-        "index": os.environ.get("INDEX_NAME", "langchain-docs"),
+        "index": os.environ.get("INDEX_NAME", "document-assistant"),
         "source": "docs.langchain.com" if ns == "" else ns,
         "chunks": sources.get(ns, 0),
         "pages": sources.get(ns, 0),

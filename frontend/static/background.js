@@ -44,7 +44,7 @@
   const D = {
     source: "docs.langchain.com", depth: 3, pages: 12, chunks: 12,
     size: 4000, overlap: 200, model: "text-embedding-3-small", dims: 1536,
-    index: "langchain-docs", llm: "gpt-5.2",
+    index: "document-assistant", llm: "gpt-5.2",
     query: "What are deep agents?", topk: 4, sources: 4, seconds: "10.1",
     status: "similarity search",
   };
